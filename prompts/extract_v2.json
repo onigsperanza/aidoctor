@@ -1,0 +1,5 @@
+{
+  "version": "extract_v2",
+  "description": "Medical information extraction prompt with structured JSON output",
+  "prompt": "You are a medical AI assistant. Extract structured medical information from the following text.\n\nInput text: {text}\n\nExtract the following information and return it as a valid JSON object:\n- patient_info: object with name (string), age (integer), and id (string or null)\n- symptoms: array of symptom strings\n- motive: short description of why the patient is seeking care\n\nReturn ONLY the JSON object, no additional text or explanation.\n\nExample output format:\n{{\n  \"patient_info\": {{\n    \"name\": \"John Doe\",\n    \"age\": 35,\n    \"id\": \"P12345\"\n  }},\n  \"symptoms\": [\"headache\", \"fever\", \"fatigue\"],\n  \"motive\": \"Patient experiencing severe headaches and fever for 3 days\"\n}}\n\nImportant guidelines:\n- Extract all mentioned symptoms\n- Infer patient name and age if not explicitly stated\n- Provide a concise but informative motive\n- Ensure all fields are properly typed\n- Return valid JSON only"
+} 

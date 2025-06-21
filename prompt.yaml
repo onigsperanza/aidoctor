@@ -1,0 +1,175 @@
+name: ai-doctor-assistant
+description: >
+  Build a full-stack AI medical assistant web application that transcribes patient speech,
+  extracts structured EMR data, leverages personalized vector memory, and generates diagnostic
+  suggestions using LLMs. The system must fulfill all requirements from the technical challenge,
+  and demonstrate production-grade design with observability, drift detection, prompt versioning,
+  and patient-specific memory retrieval.
+
+requirements:
+  - Full-stack system using:
+      - FastAPI backend
+      - Firebase Hosting (frontend)
+      - Firebase Cloud Functions (as API gateway and middleware)
+      - LangGraph for orchestrating AI steps
+      - Whisper for speech transcription
+      - OpenAI or Gemini (LLM)
+      - MedCAT for biomedical NER + SNOMED mapping
+      - Cognee for vector-based patient memory
+      - MLflow + Firestore/BigQuery for observability
+      - React frontend with TSX interface
+      - Drift detection, retry logic, prompt versioning, and logging
+
+frontend:
+  - React page with:
+      - Audio URL input
+      - Free text input
+      - Submit button
+      - Loading state and result rendering
+      - Toggle for GPT-4 / Gemini
+  - Hosted on Firebase Hosting
+
+firebase:
+  - Use Firebase Cloud Functions to:
+      - Route requests to FastAPI
+      - Validate and normalize input
+      - Log latency, timestamp, request type
+      - Apply standardized error formatting
+      - Optionally notify via Slack on error
+
+backend_api:
+  - Endpoint: POST /process
+  - Request:
+      - audio_url (optional)
+      - text (optional)
+  - Response:
+      - patient_info
+      - symptoms
+      - motive
+      - diagnosis
+      - treatment
+      - recommendations
+      - metadata (model version, prompt version, latency)
+
+langgraph_pipeline:
+  - Step 1: Transcription (if audio) using Whisper
+  - Step 2: EMR Extraction via LLM with JSON Schema (detailed below)
+  - Step 3: Patient memory retrieval from Cognee using embedded symptoms
+  - Step 4: Diagnosis generation using retrieved history + current input (detailed below)
+
+llm_pipeline:
+  description: >
+    Use a structured, multi-step LLM workflow to extract medical data from free text
+    (entered directly or from audio transcription), followed by diagnostic reasoning.
+    All outputs must be structured and traceable, with prompt versioning and schema validation.
+
+  steps:
+    - step: Medical Information Extraction
+      description: >
+        Receive raw input text (either from Whisper transcription or user input).
+        Use a language model (e.g., GPT-4 or Gemini) to extract structured medical information.
+      input: string (text)
+      output: JSON object matching the following schema:
+        {
+          "patient_info": {
+            "name": "string",
+            "age": int,
+            "id": "string or null"
+          },
+          "symptoms": ["string", ...],
+          "motive": "short free-text string"
+        }
+      requirements:
+        - Must use structured JSON schema output (not plain text)
+        - Must be consistent across prompts and runs
+        - Prompt version must be tracked (e.g., `extract_v2.json`)
+        - Validate that all fields exist and are correctly typed
+        - Log output with latency and model used
+
+    - step: Diagnosis Generation
+      description: >
+        Take structured EMR JSON (patient info, symptoms, motive) and generate medical reasoning.
+        Combine current input and (if available) vector-retrieved patient history.
+        Use LLM to produce:
+          - A diagnostic assessment
+          - Suggested treatment plan
+          - Additional follow-up or recommendations
+      input:
+        {
+          "patient_info": { ... },
+          "symptoms": [...],
+          "motive": "...",
+          "retrieved_history": ["optional vector-matched notes"]
+        }
+      output:
+        {
+          "diagnosis": "string",
+          "treatment": "string",
+          "recommendations": "string"
+        }
+      requirements:
+        - Combine all outputs into a coherent, human-readable medical explanation
+        - Output must be loggable as separate fields (not a single blob)
+        - Prompt version (e.g. `diagnosis_v3.txt`) must be tracked
+        - Confidence and reasoning trace (optional) can be included
+
+  bonus_ner_mapping:
+    - component: NER + Concept Mapping
+      tool: MedCAT (medcat.CAT)
+    - component: LangChain Tooling
+      implementation: Wrap MedCAT in @tool decorator
+    - SNOMED Validator:
+        confidence_threshold: 0.85
+        actions:
+          - Accept above threshold
+          - Flag below threshold for manual review
+          - Use SNOMED graph traversal (is-a relations)
+          - Log concept IDs, parents, and tags
+
+patient_memory:
+  - Memory engine: Cognee
+  - Each patient is namespaced by patient_id (e.g. name + age hash)
+  - Store each consult as vector with metadata (symptoms, diagnosis, timestamp)
+  - Query via embedding similarity
+  - Returned chunks passed to LangGraph node for personalized diagnosis
+
+mlops_logging:
+  - Use MLflow or Firestore to track:
+      - input_type
+      - prompt_version
+      - model_version
+      - latency_ms
+      - output_length
+      - errors / retries
+  - Support structured logs in Firestore or BigQuery
+
+drift_detection:
+  - Schema field check for missing data
+  - Symptom count variance tracker
+  - Cosine similarity comparison between current and previous outputs
+  - Flag abnormal results and log to MLflow
+
+files:
+  - main.py: FastAPI app entrypoint
+  - routers/process.py: API route
+  - services/whisper.py: Whisper transcription
+  - services/extract.py: JSON schema + LLM
+  - services/diagnose.py: Final LLM logic
+  - langgraph/agent.py: Node orchestration
+  - memory/cognee.py: Patient-specific memory handler
+  - mlops/logger.py: Observability + metadata tracking
+  - mlops/drift.py: Field check + vector comparison
+  - utils/id_utils.py: Patient ID logic
+  - prompts/extract_v2.json: JSON schema prompt
+  - prompts/diagnosis_v3.txt: Diagnosis prompt
+  - frontend/src/main.tsx: TSX component for UI
+  - README.md: Full setup, design decisions, usage examples
+
+deliverables:
+  - GitHub repo with code
+  - README with:
+      - Technical breakdown
+      - Design decisions (LangGraph, Cognee, SNOMED)
+      - Deployment steps
+      - Prompt versioning explanation
+  - Optional live demo (Firebase + Cloud Run)
