@@ -104,7 +104,7 @@ Example output format:
         response = self.openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a medical AI assistant that extracts structured information."},
+                {"role": "system", "content": "Eres un asistente médico de IA. Extrae información médica estructurada del texto proporcionado en español y responde únicamente en español."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.1,

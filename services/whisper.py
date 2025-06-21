@@ -35,8 +35,8 @@ class WhisperService:
                     temp_file_path = temp_file.name
                 
                 try:
-                    # Transcribe using Whisper
-                    result = self.model.transcribe(temp_file_path)
+                    # Transcribe using Whisper (force Spanish)
+                    result = self.model.transcribe(temp_file_path, language="es")
                     transcription = result["text"].strip()
                     
                     logger.info(f"Successfully transcribed audio from {audio_url}")

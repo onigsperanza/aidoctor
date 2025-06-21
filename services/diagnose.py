@@ -117,7 +117,7 @@ Reason for Visit: {motive}
         response = self.openai_client.chat.completions.create(
             model="gpt-4",
             messages=[
-                {"role": "system", "content": "You are a medical AI assistant that provides diagnostic assessments."},
+                {"role": "system", "content": "Eres un asistente médico de IA. Realiza el razonamiento diagnóstico y responde únicamente en español."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.2,
