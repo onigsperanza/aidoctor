@@ -218,6 +218,84 @@ docker-compose up --build
 - **Secure Storage**: Encrypted vector embeddings
 - **Access Logging**: All data access logged and monitored
 
+## 🔧 Local Development
+
+Run the full stack locally in minutes using Docker and Vite.
+
+### Requirements
+- Docker
+- Node.js + npm
+- Firebase CLI (optional)
+- `.env.local` in `frontend/`
+- `dev.env` in project root
+
+---
+
+### 🧠 One Command to Start All
+
+```bash
+chmod +x run_local.sh && ./run_local.sh
+```
+
+---
+
+### Manual Start (If Needed)
+
+#### Backend
+
+```bash
+docker build -t ai-backend .
+docker run -p 8000:8000 --env-file dev.env ai-backend
+```
+
+- Swagger UI: http://localhost:8000/docs
+
+#### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+`.env.local` content:
+
+```env
+VITE_API_URL=http://localhost:8000
+```
+
+#### Firebase Emulator (Optional)
+
+```bash
+firebase emulators:start --only functions
+```
+
+---
+
+### Folder Structure
+
+```
+├── backend/
+│   ├── main.py
+│   ├── services/
+│   ├── langgraph/
+│   └── memory/
+├── frontend/
+│   └── src/
+├── run_local.sh
+├── dev.env
+└── frontend/.env.local
+```
+
+---
+
+### ✅ Test Flow
+
+1. Open http://localhost:5173  
+2. Submit audio or text  
+3. Backend returns structured EMR, diagnosis, and recommendations  
+4. Inspect logs or Swagger: http://localhost:8000/docs
+
 ## 🤝 Contributing
 
 1. Fork the repository

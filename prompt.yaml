@@ -173,3 +173,49 @@ deliverables:
       - Deployment steps
       - Prompt versioning explanation
   - Optional live demo (Firebase + Cloud Run)
+
+local_execution:
+  description: >
+    Provide a seamless local development experience so evaluators and contributors
+    can run the full system (frontend and backend) with minimal setup.
+
+  backend:
+    containerized: true
+    tech: FastAPI + LangGraph + Whisper + Cognee
+    instructions:
+      - docker build -t ai-backend .
+      - docker run -p 8000:8000 --env-file dev.env ai-backend
+
+  frontend:
+    tech: React + Vite + TypeScript
+    env_file: .env.local
+    instructions:
+      - cd frontend
+      - npm install
+      - npm run dev
+    notes:
+      - Set VITE_API_URL=http://localhost:8000 in .env.local
+
+  firebase:
+    optional: true
+    description: >
+      Firebase Functions and Hosting can be emulated using Firebase Emulator Suite.
+      For simplicity, direct API calls from React to FastAPI are preferred for local testing.
+    run:
+      - firebase emulators:start --only functions
+
+  unified_script:
+    name: run_local.sh
+    purpose: Automatically start both backend and frontend
+    contents: |
+      #!/bin/bash
+      echo "🚀 Starting backend..."
+      docker build -t ai-backend . && docker run -p 8000:8000 --env-file dev.env ai-backend &
+      sleep 5
+      echo "🎨 Starting frontend..."
+      cd frontend && npm install && npm run dev
+
+  developer_notes:
+    - Use Postman or browser to test: http://localhost:8000/docs
+    - Frontend runs on http://localhost:5173
+    - Make sure `dev.env` contains all required OpenAI/Firebase credentials

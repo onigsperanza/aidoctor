@@ -7,8 +7,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = FastAPI(
-    title="AI Doctor Assistant",
-    description="Full-stack AI medical assistant with speech transcription, EMR extraction, and diagnostic suggestions",
+    title="AI Doctor Assistant - Servicio Médico en Español",
+    description="Asistente médico de IA de pila completa con transcripción de voz, extracción de datos EMR estructurados y sugerencias de diagnóstico usando LLMs",
     version="1.0.0"
 )
 
@@ -26,12 +26,27 @@ app.include_router(process.router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    return {"message": "AI Doctor Assistant API", "version": "1.0.0"}
+    return {
+        "message": "AI Doctor Assistant - Servicio Médico en Español", 
+        "version": "1.0.0",
+        "language": "es",
+        "default_model": "gpt-4"
+    }
 
 @app.get("/health")
 async def health_check():
-    return {"status": "healthy", "timestamp": "2024-01-01T00:00:00Z"}
+    return {
+        "status": "healthy", 
+        "timestamp": "2024-01-01T00:00:00Z",
+        "language": "es",
+        "services": {
+            "openai": "available",
+            "whisper": "available",
+            "mlflow": "available"
+        }
+    }
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    port = int(os.getenv("BACKEND_PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port) 

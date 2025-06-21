@@ -10,11 +10,18 @@ services:
       - GOOGLE_API_KEY=${GOOGLE_API_KEY}
       - MLFLOW_TRACKING_URI=http://mlflow:5000
       - LOG_LEVEL=INFO
+      - LANGUAGE=es
+      - DEFAULT_MODEL=gpt-4
     depends_on:
       - mlflow
     volumes:
       - ./logs:/app/logs
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   mlflow:
     image: python:3.11-slim
@@ -34,7 +41,7 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "5173:5173"
     environment:
       - REACT_APP_API_URL=http://localhost:8000
     depends_on:

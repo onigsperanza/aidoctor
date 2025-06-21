@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test script for AI Doctor Assistant API
+Test script for AI Doctor Assistant API (Spanish Service)
 """
 
 import requests
@@ -23,12 +23,12 @@ def test_health_check():
         return False
 
 def test_process_endpoint():
-    """Test the main process endpoint."""
-    print("\nTesting process endpoint...")
+    """Test the main process endpoint with Spanish input."""
+    print("\nTesting process endpoint with Spanish input...")
     
-    # Sample medical text
+    # Sample Spanish medical text
     test_data = {
-        "text": "Patient Sarah Johnson, age 28, experiencing severe migraine headaches for the past week. She also reports sensitivity to light and nausea. No fever or other symptoms.",
+        "text": "Paciente María González, 28 años, experimentando migrañas severas durante la última semana. También reporta sensibilidad a la luz y náuseas. Sin fiebre ni otros síntomas.",
         "model": "gpt-4"
     }
     
@@ -84,13 +84,15 @@ def test_error_handling():
 
 def main():
     """Run all tests."""
-    print("🚀 AI Doctor Assistant API Tests")
-    print("=" * 40)
+    print("🚀 AI Doctor Assistant API Tests (Spanish Service)")
+    print("=" * 50)
     
     # Check if server is running
     if not test_health_check():
         print("\n❌ Server is not running. Please start the server first:")
-        print("   python main.py")
+        print("   python313 main.py")
+        print("   or")
+        print("   ./run_local.sh")
         return
     
     # Run tests
@@ -106,11 +108,11 @@ def main():
         if test():
             passed += 1
     
-    print("\n" + "=" * 40)
+    print("\n" + "=" * 50)
     print(f"📊 Test Results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 All tests passed! The API is working correctly.")
+        print("🎉 All tests passed! The Spanish API is working correctly.")
     else:
         print("⚠️  Some tests failed. Please check the server logs.")
 
