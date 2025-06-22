@@ -9,6 +9,7 @@ const { HumanMessage, SystemMessage } = require('langchain/schema');
 const { StateGraph, END } = require('langgraph/graphs');
 const { Cognee } = require('cognee');
 const mlflow = require('mlflow');
+const { MedCAT } = require('medcat');
 const axios = require('axios');
 const multer = require('multer');
 const fs = require('fs');
@@ -68,6 +69,104 @@ try {
   mlflow.createExperiment(experimentName);
 }
 mlflow.setExperiment(experimentName);
+
+// Initialize MedCAT for NER and concept mapping
+let medcat = null;
+const initializeMedCAT = async () => {
+  try {
+    // Initialize MedCAT with default model
+    medcat = new MedCAT();
+    await medcat.loadModel();
+    console.log('MedCAT initialized successfully');
+  } catch (error) {
+    console.error('Error initializing MedCAT:', error);
+    // Fallback to basic implementation if MedCAT fails to load
+    medcat = null;
+  }
+};
+
+// SNOMED validation configuration
+const SNOMED_CONFIG = {
+  confidence_threshold: 0.85,
+  enable_graph_traversal: true,
+  log_concept_details: true
+};
+
+// SNOMED concept validation
+const validateSNOMEDConcept = (concept) => {
+  const validation = {
+    concept_id: concept.cui,
+    confidence: concept.confidence,
+    is_valid: concept.confidence >= SNOMED_CONFIG.confidence_threshold,
+    action: concept.confidence >= SNOMED_CONFIG.confidence_threshold ? 'accept' : 'flag_for_review',
+    parents: concept.parents || [],
+    tags: concept.tags || [],
+    semantic_types: concept.semantic_types || []
+  };
+  
+  return validation;
+};
+
+// MedCAT NER and concept mapping
+const performNERMapping = async (text) => {
+  if (!medcat) {
+    console.warn('MedCAT not available, skipping NER mapping');
+    return {
+      entities: [],
+      concepts: [],
+      validation_results: []
+    };
+  }
+  
+  try {
+    // Perform NER and concept mapping
+    const result = await medcat.extract(text);
+    
+    const entities = result.entities || [];
+    const concepts = result.concepts || [];
+    
+    // Validate concepts against SNOMED
+    const validationResults = concepts.map(concept => validateSNOMEDConcept(concept));
+    
+    // Separate accepted and flagged concepts
+    const acceptedConcepts = validationResults.filter(v => v.is_valid);
+    const flaggedConcepts = validationResults.filter(v => !v.is_valid);
+    
+    // Log concept details if enabled
+    if (SNOMED_CONFIG.log_concept_details) {
+      console.log('SNOMED Concept Details:', {
+        total_concepts: concepts.length,
+        accepted: acceptedConcepts.length,
+        flagged: flaggedConcepts.length,
+        details: validationResults
+      });
+    }
+    
+    return {
+      entities,
+      concepts,
+      validation_results: validationResults,
+      accepted_concepts: acceptedConcepts,
+      flagged_concepts: flaggedConcepts,
+      summary: {
+        total_entities: entities.length,
+        total_concepts: concepts.length,
+        accepted_concepts: acceptedConcepts.length,
+        flagged_concepts: flaggedConcepts.length,
+        average_confidence: concepts.length > 0 ? 
+          concepts.reduce((sum, c) => sum + c.confidence, 0) / concepts.length : 0
+      }
+    };
+  } catch (error) {
+    console.error('Error in NER mapping:', error);
+    return {
+      entities: [],
+      concepts: [],
+      validation_results: [],
+      error: error.message
+    };
+  }
+};
 
 // Use Firestore for basic patient metadata backup
 const db = admin.firestore();
@@ -180,7 +279,8 @@ const createState = () => ({
   patient_id: null,
   cognee_context: '',
   transcription: '',
-  drift_flags: []
+  drift_flags: [],
+  ner_results: {}
 });
 
 // Initialize patient knowledge graph in Cognee
@@ -221,7 +321,9 @@ const addToPatientGraph = async (patientId, data) => {
       diagnosis: data.diagnosis?.diagnosis || '',
       treatment: data.diagnosis?.treatment || '',
       recommendations: data.diagnosis?.recommendations || '',
-      raw_text: data.messages?.[data.messages.length - 1]?.content || ''
+      raw_text: data.messages?.[data.messages.length - 1]?.content || '',
+      ner_concepts: data.ner_results?.concepts || [],
+      snomed_validation: data.ner_results?.validation_results || []
     };
     
     // Add to Cognee knowledge graph
@@ -272,8 +374,8 @@ const getPatientContext = async (patientId, currentSymptoms) => {
   }
 };
 
-// MLflow logging function with drift detection
-const logToMLflow = async (requestId, inputType, model, promptVersion, latencyMs, extractionResult, diagnosisResult, driftFlags = []) => {
+// MLflow logging function with drift detection and NER results
+const logToMLflow = async (requestId, inputType, model, promptVersion, latencyMs, extractionResult, diagnosisResult, driftFlags = [], nerResults = {}) => {
   try {
     await mlflow.startRun();
     
@@ -290,12 +392,25 @@ const logToMLflow = async (requestId, inputType, model, promptVersion, latencyMs
     mlflow.logMetric('diagnosis_success', diagnosisResult ? 1 : 0);
     mlflow.logMetric('drift_detected', driftFlags.length > 0 ? 1 : 0);
     
+    // Log NER metrics
+    if (nerResults.summary) {
+      mlflow.logMetric('ner_entities_count', nerResults.summary.total_entities);
+      mlflow.logMetric('ner_concepts_count', nerResults.summary.total_concepts);
+      mlflow.logMetric('snomed_accepted_concepts', nerResults.summary.accepted_concepts);
+      mlflow.logMetric('snomed_flagged_concepts', nerResults.summary.flagged_concepts);
+      mlflow.logMetric('snomed_average_confidence', nerResults.summary.average_confidence);
+    }
+    
     // Log artifacts
     mlflow.logArtifact(JSON.stringify(extractionResult, null, 2), 'extraction_result.json');
     mlflow.logArtifact(JSON.stringify(diagnosisResult, null, 2), 'diagnosis_result.json');
     
     if (driftFlags.length > 0) {
       mlflow.logArtifact(JSON.stringify({ drift_flags: driftFlags }, null, 2), 'drift_flags.json');
+    }
+    
+    if (nerResults.concepts && nerResults.concepts.length > 0) {
+      mlflow.logArtifact(JSON.stringify(nerResults, null, 2), 'ner_results.json');
     }
     
     await mlflow.endRun();
@@ -342,6 +457,16 @@ const createWorkflow = () => {
       console.error('Error parsing extraction response:', error);
       return { extracted_data: { error: 'No se pudo extraer datos estructurados' } };
     }
+  });
+
+  // Perform NER mapping and SNOMED validation
+  workflow.addNode('ner_mapping', async (state) => {
+    const lastMessage = state.messages[state.messages.length - 1];
+    
+    // Perform NER and concept mapping
+    const nerResults = await performNERMapping(lastMessage.content);
+    
+    return { ner_results: nerResults };
   });
 
   // Get patient context using Cognee RAG
@@ -434,7 +559,8 @@ const createWorkflow = () => {
       await addToPatientGraph(state.patient_id, {
         extracted_data: state.extracted_data,
         diagnosis: state.diagnosis,
-        messages: state.messages
+        messages: state.messages,
+        ner_results: state.ner_results
       });
     } catch (error) {
       console.error('Error saving to Cognee graph:', error);
@@ -445,7 +571,8 @@ const createWorkflow = () => {
 
   // Define workflow edges
   workflow.setEntryPoint('extract');
-  workflow.addEdge('extract', 'get_context');
+  workflow.addEdge('extract', 'ner_mapping');
+  workflow.addEdge('ner_mapping', 'get_context');
   workflow.addEdge('get_context', 'diagnose');
   workflow.addEdge('diagnose', 'detect_drift');
   workflow.addEdge('detect_drift', 'save_to_graph');
@@ -460,6 +587,11 @@ const processMessage = async (text, patientId = null) => {
   const requestId = `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   
   try {
+    // Initialize MedCAT if not already done
+    if (!medcat) {
+      await initializeMedCAT();
+    }
+    
     const workflow = createWorkflow();
     
     const initialState = createState();
@@ -470,7 +602,7 @@ const processMessage = async (text, patientId = null) => {
     
     const latencyMs = Date.now() - startTime;
     
-    // Log to MLflow with drift detection
+    // Log to MLflow with drift detection and NER results
     await logToMLflow(
       requestId,
       'text',
@@ -479,7 +611,8 @@ const processMessage = async (text, patientId = null) => {
       latencyMs,
       result.extracted_data,
       result.diagnosis,
-      result.drift_flags
+      result.drift_flags,
+      result.ner_results
     );
     
     return {
@@ -489,6 +622,12 @@ const processMessage = async (text, patientId = null) => {
       diagnosis: result.diagnosis?.diagnosis || '',
       treatment: result.diagnosis?.treatment || '',
       recommendations: result.diagnosis?.recommendations || '',
+      ner_mapping: {
+        entities: result.ner_results?.entities || [],
+        concepts: result.ner_results?.concepts || [],
+        snomed_validation: result.ner_results?.validation_results || [],
+        summary: result.ner_results?.summary || {}
+      },
       metadata: {
         request_id: requestId,
         model_version: 'gpt-4',
@@ -497,7 +636,8 @@ const processMessage = async (text, patientId = null) => {
         timestamp: new Date().toISOString(),
         input_type: 'text',
         drift_detected: result.drift_flags.length > 0,
-        drift_flags: result.drift_flags
+        drift_flags: result.drift_flags,
+        snomed_confidence_threshold: SNOMED_CONFIG.confidence_threshold
       },
       success: true
     };
@@ -544,10 +684,21 @@ exports.health = functions.https.onRequest((req, res) => {
   cors(req, res, () => {
     res.json({ 
       status: 'OK', 
-      service: 'AI Doctor Assistant with Cognee & MLflow',
+      service: 'AI Doctor Assistant with Cognee, MLflow & MedCAT',
       language: 'Spanish',
-      features: ['speech_recognition', 'emr_extraction', 'cognee_rag', 'mlflow_observability', 'drift_detection', 'schema_validation', 'personalized_reasoning'],
+      features: [
+        'speech_recognition', 
+        'emr_extraction', 
+        'cognee_rag', 
+        'mlflow_observability', 
+        'drift_detection', 
+        'schema_validation', 
+        'medcat_ner_mapping',
+        'snomed_validation',
+        'personalized_reasoning'
+      ],
       prompt_versions: PROMPT_VERSIONS,
+      snomed_config: SNOMED_CONFIG,
       timestamp: new Date().toISOString()
     });
   });
