@@ -1,6 +1,19 @@
-# AI Doctor Assistant - Full Stack Medical AI Application
+# AI Doctor Assistant
 
-A comprehensive AI-powered medical assistant with Spanish language support, featuring speech recognition, medical information extraction, diagnosis generation, patient memory management, and MLops observability.
+A full-stack AI medical assistant web application that transcribes patient speech, extracts structured EMR data, leverages personalized vector memory, and generates diagnostic suggestions using LLMs.
+
+## 🏥 Features
+
+- **Speech Transcription**: Convert patient audio to text using Whisper
+- **Medical Information Extraction**: Extract structured patient data using LLMs
+- **Patient Memory**: Vector-based patient history retrieval using Cognee
+- **Diagnostic Suggestions**: AI-powered medical assessments with GPT-4/Gemini
+- **Observability**: MLflow integration for experiment tracking and drift detection
+- **Production-Ready**: Prompt versioning, retry logic, and comprehensive logging
+- **Modern UI**: React frontend with TypeScript and beautiful design
+- **Spanish Language Support**: Full Spanish backend and frontend support
+- **Medical AI**: MedCAT for NER and SNOMED-CT concept mapping
+- **Drift Detection**: Automated data drift monitoring and alerting
 
 ## 🏗️ Architecture
 
@@ -10,6 +23,17 @@ A comprehensive AI-powered medical assistant with Spanish language support, feat
 - **Memory**: Cognee Knowledge Graphs
 - **MLops**: MLflow for observability and drift detection
 - **Language**: Spanish (es)
+
+```
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   React Frontend │    │ Firebase Functions│    │   AI/ML Services │
+│                 │    │                  │    │                 │
+│ • Modern UI     │◄──►│ • LangGraph      │◄──►│ • OpenAI GPT-4  │
+│ • Audio Upload  │    │ • Cognee RAG     │    │ • Google Gemini  │
+│ • Real-time     │    │ • MLflow Logging │    │ • MedCAT NER     │
+│ • Patient Mgmt  │    │ • Drift Detection│    │ • SNOMED Validation│
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+```
 
 ## 🚀 Quick Start - Local Firebase Emulation
 
@@ -21,8 +45,6 @@ A comprehensive AI-powered medical assistant with Spanish language support, feat
 4. **Firebase CLI**: `npm install -g firebase-tools`
 
 ### Step-by-Step Setup
-
-#### 1. Clone and Setup
 ```bash
 git clone https://github.com/yourusername/aidoctor.git
 cd aidoctor
@@ -59,9 +81,9 @@ GOOGLE_API_KEY=your_google_api_key_here
 
 #### 4. Start All Services
 ```bash
-# Option A: Using the provided script
+# Option A: Using the provided script (Recommended)
 chmod +x run_local_firebase.sh
-./run_local_firebase.sh
+./run_local_firebase.sh start
 
 # Option B: Manual Docker Compose
 docker-compose up --build -d
