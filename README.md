@@ -1,269 +1,314 @@
-# AI Doctor Assistant
+# AI Doctor Assistant - Full Stack Medical AI Application
 
-A comprehensive full-stack AI medical assistant application that provides intelligent medical consultation, diagnosis, and patient management in Spanish. Built with Firebase Cloud Functions, React frontend, and advanced AI/ML technologies.
-
-## 🌟 Features
-
-### Core Features
-- **🎤 Speech Recognition**: Real-time audio transcription using OpenAI Whisper
-- **📋 EMR Extraction**: Structured data extraction from patient descriptions
-- **🧠 AI Diagnosis**: Intelligent diagnosis generation using GPT-4 and Google Gemini
-- **👥 Patient Memory**: Persistent patient knowledge graphs using Cognee
-- **📊 MLOps Observability**: Comprehensive logging and drift detection with MLflow
-- **🔍 Schema Validation**: Robust data validation and error handling
-- **🌐 Spanish Language**: Full Spanish language support for medical consultations
-
-### 🎯 Bonus Features (Fully Implemented)
-- **🏷️ MedCAT NER Mapping**: Named Entity Recognition for medical concepts
-- **✅ SNOMED Validation**: Medical concept validation against SNOMED-CT standards
-- **📈 Enhanced MLflow Logging**: Detailed metrics for medical concept recognition
-- **🎯 Confidence Thresholds**: Configurable confidence levels for concept acceptance
-- **📋 Concept Traversal**: Graph-based medical concept relationships
-- **🔍 Detailed Logging**: Comprehensive concept validation logging
+A comprehensive AI-powered medical assistant with Spanish language support, featuring speech recognition, medical information extraction, diagnosis generation, patient memory management, and MLops observability.
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   React Frontend │    │ Firebase Functions│    │   AI/ML Services │
-│                 │    │                  │    │                 │
-│ • Modern UI     │◄──►│ • LangGraph      │◄──►│ • OpenAI GPT-4  │
-│ • Audio Upload  │    │ • Cognee RAG     │    │ • Google Gemini  │
-│ • Real-time     │    │ • MLflow Logging │    │ • MedCAT NER     │
-│ • Patient Mgmt  │    │ • Drift Detection│    │ • SNOMED Validation│
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-```
+- **Frontend**: React + TypeScript + Vite
+- **Backend**: Firebase Functions (Node.js) + Python Microservice
+- **AI/ML**: OpenAI GPT-4, Google Gemini, Whisper, MedCAT, SNOMED-CT
+- **Memory**: Cognee Knowledge Graphs
+- **MLops**: MLflow for observability and drift detection
+- **Language**: Spanish (es)
 
-## 🚀 Quick Start
+## 🚀 Quick Start - Local Firebase Emulation
 
 ### Prerequisites
-- Node.js 18+ and Python 3.9+
-- Firebase CLI
-- Docker (for local development)
 
-### 1. Clone and Setup
+1. **Node.js 18+** and **npm**
+2. **Python 3.9+** and **pip**
+3. **Docker** and **Docker Compose**
+4. **Firebase CLI**: `npm install -g firebase-tools`
+
+### Step-by-Step Setup
+
+#### 1. Clone and Setup
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/yourusername/aidoctor.git
 cd aidoctor
 ```
 
-### 2. Environment Configuration
+#### 2. Install Dependencies
 ```bash
-cd functions
-cp env.example .env
+# Install frontend dependencies
+cd frontend && npm install && cd ..
+
+# Install Firebase Functions dependencies
+cd functions && npm install && cd ..
+
+# Install Python microservice dependencies
+cd python-service && pip install -r requirements.txt && cd ..
 ```
 
-Edit `functions/.env` with your API keys:
-```env
-# OpenAI Configuration
+#### 3. Configure Environment Variables
+```bash
+# Copy environment files
+cp functions/env.example functions/.env
+cp .env.example .env
+
+# Edit the files with your API keys
+# functions/.env:
 OPENAI_API_KEY=your_openai_api_key_here
-
-# Google AI Configuration  
 GOOGLE_API_KEY=your_google_api_key_here
+PYTHON_SERVICE_URL=http://localhost:8000
 
-# MLflow Configuration
-MLFLOW_TRACKING_URI=http://localhost:5000
-
-# MedCAT Configuration
-MEDCAT_MODEL_PATH=/path/to/medcat/model
-MEDCAT_VOCAB_PATH=/path/to/medcat/vocab
-
-# SNOMED Configuration
-SNOMED_CONFIDENCE_THRESHOLD=0.85
-SNOMED_ENABLE_GRAPH_TRAVERSAL=true
-SNOMED_LOG_CONCEPT_DETAILS=true
+# .env (for Docker Compose):
+OPENAI_API_KEY=your_openai_api_key_here
+GOOGLE_API_KEY=your_google_api_key_here
 ```
 
-### 3. Local Development
+#### 4. Start All Services
 ```bash
-# Start Firebase Emulator
-firebase emulators:start
+# Option A: Using the provided script
+chmod +x run_local_firebase.sh
+./run_local_firebase.sh
 
-# In another terminal, start the frontend
-cd frontend
-npm install
-npm run dev
+# Option B: Manual Docker Compose
+docker-compose up --build -d
 ```
 
-### 4. Production Deployment
+#### 5. Verify Services
 ```bash
-# Deploy to Firebase
-firebase deploy
-
-# Or use the provided script
-./run_local.sh
+# Test all services
+./run_local_firebase.sh test
 ```
 
-## 🧪 Testing
+### 🌐 Service URLs
 
-Run comprehensive tests including NER mapping and SNOMED validation:
+- **Frontend**: http://localhost:5173
+- **Firebase Functions**: http://localhost:5001
+- **Python Microservice**: http://localhost:8000
+- **MLflow**: http://localhost:5000
+- **Firebase Emulator UI**: http://localhost:4000
 
+## 🧪 Testing the Application
+
+### 1. Health Checks
 ```bash
-python test_api.py
+# Test Firebase Functions
+curl http://localhost:5001/health
+
+# Test Python Microservice
+curl http://localhost:8000/health
 ```
 
-The test suite covers:
-- ✅ Health check and service status
-- 🧠 NER mapping with MedCAT
-- ✅ SNOMED concept validation
-- 📊 MLflow metrics logging
-- 👥 Patient history and search
-- 🎤 Audio transcription
-- 🔍 Drift detection
-
-## 📋 API Endpoints
-
-### Core Endpoints
-- `POST /process` - Main processing with NER and SNOMED validation
-- `POST /transcribe` - Audio transcription
-- `GET /health` - Service health check
-- `GET /getHistory` - Patient history retrieval
-- `POST /searchPatient` - Patient knowledge graph search
-
-### Response Format with NER/SNOMED
-```json
-{
-  "patient_info": {...},
-  "symptoms": [...],
-  "diagnosis": "...",
-  "treatment": "...",
-  "recommendations": "...",
-  "ner_mapping": {
-    "entities": [...],
-    "concepts": [...],
-    "snomed_validation": [...],
-    "summary": {
-      "total_entities": 5,
-      "total_concepts": 8,
-      "accepted_concepts": 7,
-      "flagged_concepts": 1,
-      "average_confidence": 0.92
-    }
-  },
-  "metadata": {
-    "request_id": "req_1234567890",
-    "drift_detected": false,
-    "snomed_confidence_threshold": 0.85
-  }
-}
+### 2. Process Text
+```bash
+curl -X POST http://localhost:5001/process \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Tengo dolor de cabeza y fiebre desde hace 2 días",
+    "patient_id": "test-patient-123"
+  }'
 ```
 
-## 🧠 MedCAT NER Mapping
-
-The application uses MedCAT for advanced medical Named Entity Recognition:
-
-### Features
-- **Medical Concept Extraction**: Identifies diseases, symptoms, medications, procedures
-- **SNOMED-CT Mapping**: Maps concepts to standardized medical terminology
-- **Confidence Scoring**: Each concept gets a confidence score (0-1)
-- **Validation Thresholds**: Configurable acceptance thresholds (default: 0.85)
-- **Concept Relationships**: Tracks parent-child relationships in medical hierarchy
-
-### Configuration
-```javascript
-const SNOMED_CONFIG = {
-  confidence_threshold: 0.85,        // Minimum confidence for acceptance
-  enable_graph_traversal: true,      // Enable concept relationship traversal
-  log_concept_details: true          // Detailed logging of concept validation
-};
+### 3. Transcribe Audio
+```bash
+curl -X POST http://localhost:5001/transcribe \
+  -F "audio=@path/to/your/audio.mp3"
 ```
 
-### Concept Validation Process
-1. **Extraction**: MedCAT extracts medical concepts from text
-2. **SNOMED Mapping**: Concepts mapped to SNOMED-CT identifiers
-3. **Confidence Check**: Each concept validated against threshold
-4. **Classification**: Concepts marked as "accepted" or "flagged_for_review"
-5. **Logging**: Detailed metrics logged to MLflow
-
-## 📊 MLflow Observability
-
-Comprehensive logging and monitoring:
-
-### Metrics Tracked
-- **NER Performance**: Entity count, concept count, confidence scores
-- **SNOMED Validation**: Accepted vs flagged concepts, average confidence
-- **Processing Performance**: Latency, success rates, error rates
-- **Drift Detection**: Schema validation, symptom count variance
-
-### Artifacts Logged
-- `extraction_result.json` - Structured extraction data
-- `diagnosis_result.json` - AI diagnosis output
-- `ner_results.json` - MedCAT NER mapping results
-- `drift_flags.json` - Data drift detection flags
-
-## 🔧 LangGraph Workflow
-
-The application uses LangGraph for orchestrated AI processing:
-
-```
-Extract → NER Mapping → Get Context → Diagnose → Detect Drift → Save to Graph
+### 4. Complete Audio Processing
+```bash
+curl -X POST http://localhost:5001/processAudio \
+  -H "Content-Type: application/json" \
+  -d '{
+    "audio_url": "https://example.com/audio.mp3",
+    "patient_id": "test-patient-123",
+    "language": "es"
+  }'
 ```
 
-Each step includes:
-- **Schema Validation**: Ensures data quality
-- **Error Handling**: Graceful fallbacks
-- **MLflow Logging**: Performance tracking
-- **Cognee Integration**: Knowledge graph updates
+### 5. Memory Operations
+```bash
+# Save to memory
+curl -X POST http://localhost:5001/saveMemory \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patient_id": "test-patient-123",
+    "content": "Dolor de cabeza y fiebre",
+    "content_type": "symptom"
+  }'
 
-## 🏥 Medical Features
+# Query memory
+curl -X POST http://localhost:5001/queryMemory \
+  -H "Content-Type: application/json" \
+  -d '{
+    "patient_id": "test-patient-123",
+    "query": "dolor de cabeza",
+    "limit": 5
+  }'
+```
 
-### Patient Management
-- **Persistent Memory**: Patient history stored in Cognee knowledge graphs
-- **Contextual Reasoning**: Previous consultations inform new diagnoses
-- **Personalized Care**: Patient-specific medical history and preferences
+## 🔧 Development Commands
 
-### Medical Validation
-- **SNOMED-CT Standards**: Industry-standard medical terminology
-- **Confidence Thresholds**: Quality control for medical concepts
-- **Drift Detection**: Monitors for data quality issues
-- **Schema Validation**: Ensures structured data integrity
+### Using the Script
+```bash
+# Start all services
+./run_local_firebase.sh start
 
-## 🛠️ Development
+# Stop all services
+./run_local_firebase.sh stop
 
-### Project Structure
+# Restart all services
+./run_local_firebase.sh restart
+
+# View logs
+./run_local_firebase.sh logs
+
+# Test services
+./run_local_firebase.sh test
+```
+
+### Manual Commands
+```bash
+# Start services
+docker-compose up --build -d
+
+# Stop services
+docker-compose down
+
+# View logs
+docker-compose logs -f
+
+# Rebuild specific service
+docker-compose up --build -d backend
+
+# Access service shell
+docker-compose exec backend bash
+docker-compose exec functions bash
+```
+
+## 📁 Project Structure
+
 ```
 aidoctor/
-├── functions/           # Firebase Cloud Functions
-│   ├── index.js        # Main backend logic
-│   ├── package.json    # Node.js dependencies
-│   └── .env           # Environment configuration
-├── frontend/           # React frontend
-│   ├── src/           # React components
-│   ├── package.json   # Frontend dependencies
-│   └── vite.config.ts # Build configuration
-├── prompts/           # AI prompt templates
-├── test_api.py        # Comprehensive test suite
-└── run_local.sh       # Local development script
+├── frontend/                 # React frontend
+│   ├── src/
+│   ├── package.json
+│   └── Dockerfile
+├── functions/               # Firebase Functions (Node.js)
+│   ├── index.js            # Main functions
+│   ├── package.json
+│   ├── .env               # Environment variables
+│   └── Dockerfile
+├── python-service/         # Python microservice
+│   ├── main.py            # FastAPI app
+│   ├── services/          # AI services
+│   ├── memory/            # Cognee memory
+│   ├── mlops/             # MLflow & drift detection
+│   ├── requirements.txt
+│   └── Dockerfile
+├── prompts/               # AI prompts
+├── docker-compose.yml     # Local development
+├── run_local_firebase.sh  # Setup script
+└── README.md
 ```
 
-### Key Technologies
-- **Backend**: Firebase Cloud Functions, Node.js
-- **Frontend**: React, TypeScript, Vite
-- **AI/ML**: OpenAI GPT-4, Google Gemini, MedCAT, LangGraph
-- **Knowledge Graph**: Cognee
-- **Observability**: MLflow
-- **Medical Standards**: SNOMED-CT
+## 🔌 API Endpoints
 
-## 📈 Performance
+### Firebase Functions (Port 5001)
+- `GET /health` - Health check
+- `POST /process` - Process text input
+- `POST /transcribe` - Transcribe audio file
+- `POST /processAudio` - Complete audio processing
+- `POST /saveMemory` - Save to patient memory
+- `POST /queryMemory` - Query patient memory
 
-### Benchmarks
-- **Processing Time**: < 5 seconds for typical consultations
-- **NER Accuracy**: > 90% for medical concept recognition
-- **SNOMED Coverage**: > 95% of common medical terms
-- **Drift Detection**: Real-time monitoring with < 1 second latency
+### Python Microservice (Port 8000)
+- `GET /health` - Health check
+- `POST /diagnose` - Generate diagnosis
+- `POST /extract` - Extract medical information
+- `POST /transcribe` - Transcribe audio
+- `POST /memory/save` - Save to memory
+- `POST /memory/query` - Query memory
+- `POST /mlops/log` - Log to MLflow
+- `POST /mlops/drift` - Check for drift
+- `POST /process-audio` - Complete audio pipeline
 
-### Scalability
-- **Firebase Functions**: Auto-scaling based on demand
-- **Cognee**: Distributed knowledge graph storage
-- **MLflow**: Centralized experiment tracking
-- **MedCAT**: Optimized medical NLP processing
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+1. **Port already in use**
+   ```bash
+   # Check what's using the port
+   lsof -i :5001
+   lsof -i :8000
+   lsof -i :5173
+   
+   # Kill the process or change ports in docker-compose.yml
+   ```
+
+2. **Docker not running**
+   ```bash
+   # Start Docker Desktop
+   # On Linux: sudo systemctl start docker
+   ```
+
+3. **API keys not working**
+   ```bash
+   # Check environment variables
+   docker-compose exec functions env | grep API_KEY
+   docker-compose exec backend env | grep API_KEY
+   ```
+
+4. **Services not starting**
+   ```bash
+   # Check logs
+   docker-compose logs -f
+   
+   # Rebuild services
+   docker-compose down
+   docker-compose up --build -d
+   ```
+
+### Debug Mode
+```bash
+# Run services in debug mode
+docker-compose -f docker-compose.yml -f docker-compose.debug.yml up
+
+# Access service logs
+docker-compose logs -f backend
+docker-compose logs -f functions
+docker-compose logs -f frontend
+```
+
+## 🚀 Production Deployment
+
+### Firebase Functions
+```bash
+cd functions
+firebase login
+firebase deploy --only functions
+```
+
+### Python Microservice (Cloud Run)
+```bash
+cd python-service
+gcloud builds submit --tag gcr.io/PROJECT_ID/aidoctor-python
+gcloud run deploy aidoctor-python --image gcr.io/PROJECT_ID/aidoctor-python
+```
+
+### Frontend (Firebase Hosting)
+```bash
+cd frontend
+npm run build
+firebase deploy --only hosting
+```
+
+## 📊 Monitoring & Observability
+
+- **MLflow**: http://localhost:5000 (experiments, metrics, artifacts)
+- **Firebase Console**: https://console.firebase.google.com
+- **Application Logs**: `docker-compose logs -f`
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
 3. Make your changes
-4. Add tests for new features
+4. Test locally with `./run_local_firebase.sh test`
 5. Submit a pull request
 
 ## 📄 License
@@ -272,11 +317,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## 🆘 Support
 
-For support and questions:
-- Check the documentation
-- Review the test suite
-- Open an issue on GitHub
+For issues and questions:
+1. Check the troubleshooting section
+2. Review the logs: `docker-compose logs -f`
+3. Open an issue on GitHub
+4. Contact the development team
 
 ---
 
-**Note**: This application is for educational and development purposes. It should not be used for actual medical diagnosis without proper medical supervision and validation. 
+**Happy coding! 🏥💻** 
