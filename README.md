@@ -61,9 +61,6 @@ OPENAI_API_KEY=your_openai_api_key_here
 # Google AI Configuration  
 GOOGLE_API_KEY=your_google_api_key_here
 
-# Cognee Configuration
-COGNEE_API_KEY=your_cognee_api_key_here
-
 # MLflow Configuration
 MLFLOW_TRACKING_URI=http://localhost:5000
 

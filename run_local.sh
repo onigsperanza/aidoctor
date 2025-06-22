@@ -47,7 +47,6 @@ setup_environment() {
         echo "   Then edit .env with your API keys:"
         echo "   - OPENAI_API_KEY"
         echo "   - GOOGLE_API_KEY" 
-        echo "   - COGNEE_API_KEY"
         echo "   - MLFLOW_TRACKING_URI"
         echo "   - MedCAT and SNOMED configuration"
         exit 1
