@@ -134,14 +134,14 @@ patient_memory:
   - Returned chunks passed to LangGraph node for personalized diagnosis
 
 mlops_logging:
-  - Use MLflow or Firestore to track:
+  - Use MLflow to track:
       - input_type
       - prompt_version
       - model_version
       - latency_ms
       - output_length
       - errors / retries
-  - Support structured logs in Firestore or BigQuery
+  - Support structured logs in mlfow
 
 drift_detection:
   - Schema field check for missing data

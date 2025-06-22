@@ -1,0 +1,37 @@
+{
+  "name": "functions",
+  "description": "Cloud Functions for Firebase",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "engines": {
+    "node": "18"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^11.8.0",
+    "firebase-functions": "^4.3.1",
+    "openai": "^4.0.0",
+    "google-generativeai": "^0.1.3",
+    "langchain": "^0.0.200",
+    "langchain-openai": "^0.0.5",
+    "langchain-google-genai": "^0.0.6",
+    "langgraph": "^0.0.20",
+    "cognee": "^0.0.1",
+    "mlflow": "^2.8.1",
+    "axios": "^1.6.0",
+    "multer": "^1.4.5-lts.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^8.15.0",
+    "firebase-functions-test": "^3.1.0"
+  },
+  "private": true
+} 

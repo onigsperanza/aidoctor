@@ -1,88 +1,91 @@
 #!/bin/bash
 
-echo "🏥 AI Doctor Assistant - Local Development"
-echo "=========================================="
+# AI Doctor Assistant - Firebase Local Development Script
 
-# Check if Docker is running
-if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker and try again."
+echo "🏥 AI Doctor Assistant - Firebase Local Development"
+echo "==================================================="
+
+# Function to check if a command exists
+command_exists () {
+    type "$1" &> /dev/null ;
+}
+
+# 1. Check for prerequisites
+echo "🔎 Checking prerequisites..."
+
+if ! command_exists firebase; then
+    echo "❌ Firebase CLI not found. Please install it: npm install -g firebase-tools"
     exit 1
 fi
+echo "✅ Firebase CLI is installed."
 
-# Check if dev.env exists
-if [ ! -f "dev.env" ]; then
-    echo "❌ dev.env file not found. Please create it with your API keys:"
-    echo "   cp env.example dev.env"
-    echo "   # Then edit dev.env with your OpenAI API key"
+if ! command_exists node; then
+    echo "❌ Node.js not found. Please install it."
     exit 1
 fi
+echo "✅ Node.js is installed."
 
-echo "🚀 Starting backend..."
-echo "   Building Docker image..."
-docker build -t ai-backend . 
-
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to build Docker image"
-    exit 1
+# 2. Check for Firebase project initialization
+if [ ! -f "firebase.json" ]; then
+    echo "⚠️ firebase.json not found. You might need to run 'firebase init' first."
+    # For this project, firebase.json should already be in the repo.
 fi
 
-echo "   Starting backend container..."
-docker run -d --name ai-backend-container -p 8000:8000 --env-file dev.env ai-backend
+# 3. Backend (Firebase Functions) Setup
+echo "🚀 Setting up Backend (Firebase Functions)..."
+cd functions
 
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to start backend container"
-    exit 1
+if [ ! -f ".env" ]; then
+    echo "⚠️ '.env' file not found in 'functions' directory."
+    echo "Please create it with your API keys by copying 'env.example'."
+    echo "Example 'functions/.env' content:"
+    echo "OPENAI_API_KEY=your_openai_api_key_here"
+    echo "GOOGLE_API_KEY=your_google_api_key_here"
+    # cp env.example .env
+    # echo "Then edit .env with your actual keys."
+    # exit 1 # Exit because keys are required for the backend to run.
 fi
 
-echo "✅ Backend started on http://localhost:8000"
-echo "   API docs: http://localhost:8000/docs"
-
-# Wait for backend to be ready
-echo "⏳ Waiting for backend to be ready..."
-sleep 10
-
-# Check if backend is responding
-if curl -s http://localhost:8000/health > /dev/null; then
-    echo "✅ Backend is ready!"
-else
-    echo "⚠️  Backend might still be starting up..."
-fi
-
-echo ""
-echo "🎨 Starting frontend..."
-echo "   Installing dependencies..."
-
-cd frontend
-if [ ! -f ".env.local" ]; then
-    echo "   Creating .env.local..."
-    echo "VITE_API_URL=http://localhost:8000" > .env.local
-fi
-
+echo "📦 Installing backend dependencies..."
 npm install
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to install frontend dependencies"
+    echo "❌ Failed to install backend dependencies."
     exit 1
 fi
+echo "✅ Backend dependencies installed."
+cd ..
 
-echo "   Starting frontend development server..."
-npm run dev &
 
+# 4. Frontend (React App) Setup
+echo "🎨 Setting up Frontend (React App)..."
+cd frontend
+
+if [ ! -f ".env.local" ]; then
+    echo "   Creating .env.local for frontend..."
+    # The functions emulator runs on port 5001 by default
+    echo "VITE_API_URL=http://127.0.0.1:5001/aidoctor-dev/us-central1" > .env.local
+fi
+
+
+echo "📦 Installing frontend dependencies..."
+npm install
 if [ $? -ne 0 ]; then
-    echo "❌ Failed to start frontend"
+    echo "❌ Failed to install frontend dependencies."
     exit 1
 fi
+echo "✅ Frontend dependencies installed."
 
-echo "✅ Frontend started on http://localhost:5173"
-echo ""
-echo "🎉 AI Doctor Assistant is running!"
-echo "=================================="
-echo "Frontend: http://localhost:5173"
-echo "Backend API: http://localhost:8000"
-echo "API Docs: http://localhost:8000/docs"
-echo ""
-echo "To stop the services:"
-echo "  docker stop ai-backend-container"
-echo "  docker rm ai-backend-container"
-echo "  # Frontend will stop when you press Ctrl+C"
-echo ""
-echo "Happy coding! 🚀" 
+echo "启动前端开发服务器..."
+npm run dev &
+FRONTEND_PID=$!
+cd ..
+
+# 5. Start Firebase Emulators
+echo "🔥 Starting Firebase Emulators (Functions & Firestore)..."
+firebase emulators:start --only functions,firestore --project aidoctor-dev
+
+# When emulators are stopped (Ctrl+C), stop the frontend server too
+kill $FRONTEND_PID
+
+echo "🛑 Services stopped."
+echo "👋 Goodbye!" 

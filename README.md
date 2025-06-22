@@ -1,121 +1,182 @@
 # AI Doctor Assistant
 
-A full-stack AI medical assistant web application that transcribes patient speech, extracts structured EMR data, leverages personalized vector memory, and generates diagnostic suggestions using LLMs.
+A full-stack AI medical assistant web application that transcribes patient speech, extracts structured EMR data, leverages personalized patient knowledge graphs with local RAG capabilities, and generates personalized diagnostic reasoning using LLMs on Firebase.
 
 ## 🏥 Features
 
-- **Speech Transcription**: Convert patient audio to text using Whisper
-- **Medical Information Extraction**: Extract structured patient data using LLMs
-- **Patient Memory**: Vector-based patient history retrieval using Cognee
-- **Diagnostic Suggestions**: AI-powered medical assessments with GPT-4/Gemini
-- **Observability**: MLflow integration for experiment tracking and drift detection
-- **Production-Ready**: Prompt versioning, retry logic, and comprehensive logging
-- **Modern UI**: React frontend with TypeScript and beautiful design
+- **Speech Transcription**: Convert patient audio to text using OpenAI Whisper.
+- **Medical Information Extraction**: Extract structured patient data using Google Gemini.
+- **Patient Knowledge Graphs**: Advanced patient memory using local Firestore-based knowledge graphs with similarity search.
+- **RAG-Powered Reasoning**: Retrieval-Augmented Generation over patient-specific context for personalized medical insights.
+- **Diagnostic Suggestions**: AI-powered medical assessments with GPT-4 enhanced by patient history.
+- **Serverless Backend**: Scalable and managed backend using Firebase Cloud Functions.
+- **Modern UI**: React frontend with TypeScript and Vite.
+- **Local Emulation**: Full local development environment with Firebase Emulators.
 
 ## 🏗️ Architecture
 
-### Backend (FastAPI)
-- **FastAPI**: High-performance web framework
-- **LangGraph**: AI workflow orchestration
-- **Whisper**: Speech-to-text transcription
-- **OpenAI/Gemini**: LLM integration for medical reasoning
-- **Cognee**: Vector-based patient memory
-- **MLflow**: Experiment tracking and observability
+### Backend (Firebase)
+- **Firebase Cloud Functions**: Serverless functions for all backend logic (processing, transcription, history).
+- **Local Knowledge Graphs**: Patient memory system using Firestore with similarity-based RAG capabilities.
+- **Firebase Firestore**: NoSQL database for storing patient knowledge graphs and metadata.
+- **LangGraph**: AI workflow orchestration running within a Node.js environment.
+- **OpenAI & Google AI**: Integration with Whisper, GPT-4, and Gemini models.
 
 ### Frontend (React)
-- **React 18**: Modern UI framework
-- **TypeScript**: Type-safe development
-- **Tailwind CSS**: Utility-first styling
-- **Shadcn/ui**: Beautiful component library
+- **React 18**: Modern UI framework.
+- **TypeScript**: Type-safe development.
+- **Vite**: Fast development server and build tool.
+- **Tailwind CSS**: Utility-first styling (or your preferred choice).
 
 ### Infrastructure
-- **Firebase Hosting**: Frontend deployment
-- **Firebase Cloud Functions**: API gateway
-- **Firestore/BigQuery**: Data storage and analytics
+- **Firebase Hosting**: Frontend deployment.
+- **Firebase**: Backend infrastructure (Functions, Firestore).
 
-## 🚀 Quick Start
+## 🧠 AI Agent Workflow
+
+The AI agent follows a sophisticated workflow that combines multiple AI capabilities:
+
+1. **Speech Recognition**: Patient audio is transcribed using OpenAI Whisper
+2. **Structured EMR Extraction**: Medical information is extracted and structured using Google Gemini
+3. **Patient-Specific RAG**: Local knowledge graph searches patient history for relevant medical context
+4. **Personalized Reasoning**: GPT-4 generates diagnostic suggestions enhanced by patient context
+
+### Local Knowledge Graph Benefits
+
+- **Knowledge Graphs**: Each patient gets a personalized knowledge graph stored in Firestore
+- **Similarity Search**: Jaccard similarity algorithm for finding relevant medical history
+- **Improved Accuracy**: RAG over patient-specific data reduces AI hallucinations and improves diagnostic relevance
+- **Temporal Awareness**: The system understands how patient conditions evolve over time
+- **No External Dependencies**: Self-contained system without requiring additional API keys
+
+## 🚀 Quick Start (Local Development)
 
 ### Prerequisites
 
-- Python 3.8+
-- Node.js 18+
-- OpenAI API key
-- Google API key (for Gemini)
+- **Node.js**: v18 or newer.
+- **Firebase CLI**: `npm install -g firebase-tools`
+- **OpenAI API Key**
+- **Google API Key**
 
-### Installation
+### Installation & Setup
 
-1. **Clone the repository**
-```bash
-git clone <repository-url>
-cd aidoctor
-```
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/onigsperanza/aidoctor.git
+    cd aidoctor
+    ```
 
-2. **Set up Python environment**
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-pip install -r requirements.txt
-```
+2.  **Configure Backend Environment**
 
-3. **Configure environment variables**
-```bash
-cp env.example .env
-# Edit .env with your API keys
-```
+    You need to provide your API keys for the backend functions to work.
 
-4. **Start the backend**
-```bash
-python main.py
-```
+    -   Navigate to the `functions` directory: `cd functions`
+    -   Create a `.env` file. You can copy the example: `cp env.example .env`
+    -   Edit the `functions/.env` file and add your actual API keys:
+        ```env
+        OPENAI_API_KEY=your_openai_api_key_here
+        GOOGLE_API_KEY=your_google_api_key_here
+        ```
+    -   Go back to the root directory: `cd ..`
 
-5. **Start the frontend** (in a new terminal)
-```bash
-cd frontend
-npm install
-npm run dev
-```
+3.  **Run the Application**
 
-6. **Access the application**
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+    The `run_local.sh` script handles everything: it installs dependencies for both frontend and backend, and starts the Firebase emulators and the frontend development server.
+
+    ```bash
+    chmod +x run_local.sh
+    ./run_local.sh
+    ```
+
+### Accessing the Local Services
+
+-   **Frontend App**: http://localhost:5173
+-   **Firebase Emulator Suite**: http://127.0.0.1:4000
+-   **Cloud Functions Emulator**:
+    -   The functions are exposed under the project ID `aidoctor-dev`.
+    -   Base URL: `http://127.0.0.1:5001/aidoctor-dev/us-central1`
+    -   Example `process` endpoint: `http://127.0.0.1:5001/aidoctor-dev/us-central1/process`
+-   **Firestore Emulator**: View and manage your local database via the Emulator Suite UI.
 
 ## 📋 API Usage
 
-### Process Medical Information
+You can interact with the local functions using `curl` or any API client.
+
+### Process Medical Text with RAG
+
+-   **Endpoint**: `POST /process`
+-   **URL**: `http://127.0.0.1:5001/aidoctor-dev/us-central1/process`
+-   **Body**:
+    ```json
+    {
+      "text": "El paciente se queja de un fuerte dolor de cabeza y fiebre desde hace dos días.",
+      "patient_id": "test-patient-123"
+    }
+    ```
+-   **Response**:
+    ```json
+    {
+      "patient_info": {
+        "name": "John Doe",
+        "age": 35,
+        "id": "P12345"
+      },
+      "symptoms": ["headache", "fever", "fatigue"],
+      "motive": "Patient experiencing severe headaches and fever for 3 days",
+      "diagnosis": "Likely viral infection with secondary headache",
+      "treatment": "Rest, hydration, acetaminophen for fever and pain",
+      "recommendations": "Monitor symptoms, seek medical attention if fever persists >3 days",
+      "metadata": {
+        "request_id": "uuid",
+        "model_version": "gpt-4",
+        "prompt_version": "extract_v2,diagnosis_v3",
+        "latency_ms": 1250,
+        "timestamp": "2024-01-01T00:00:00Z",
+        "input_type": "text"
+      }
+    }
+    ```
+
+### Transcribe Audio
+
+-   **Endpoint**: `POST /transcribe`
+-   **URL**: `http://127.0.0.1:5001/aidoctor-dev/us-central1/transcribe`
+-   **Body**: `multipart/form-data` with a single field `audio` containing the audio file.
 
 ```bash
-curl -X POST "http://localhost:8000/api/v1/process" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Patient John Doe, age 35, experiencing severe headaches and fever for 3 days",
-    "model": "gpt-4"
-  }'
+curl -X POST http://127.0.0.1:5001/aidoctor-dev/us-central1/transcribe \
+  -F "audio=@/path/to/your/audio.mp3"
 ```
 
-### Response Format
+### Get Patient History from Knowledge Graph
 
-```json
-{
-  "patient_info": {
-    "name": "John Doe",
-    "age": 35,
-    "id": "P12345"
-  },
-  "symptoms": ["headache", "fever", "fatigue"],
-  "motive": "Patient experiencing severe headaches and fever for 3 days",
-  "diagnosis": "Likely viral infection with secondary headache",
-  "treatment": "Rest, hydration, acetaminophen for fever and pain",
-  "recommendations": "Monitor symptoms, seek medical attention if fever persists >3 days",
-  "metadata": {
-    "request_id": "uuid",
-    "model_version": "gpt-4",
-    "prompt_version": "extract_v2,diagnosis_v3",
-    "latency_ms": 1250,
-    "timestamp": "2024-01-01T00:00:00Z",
-    "input_type": "text"
-  }
-}
+-   **Endpoint**: `GET /getHistory`
+-   **URL**: `http://127.0.0.1:5001/aidoctor-dev/us-central1/getHistory?patient_id=test-patient-123`
+
+### Search Patient Knowledge Graph
+
+-   **Endpoint**: `POST /searchPatient`
+-   **URL**: `http://127.0.0.1:5001/aidoctor-dev/us-central1/searchPatient`
+-   **Body**:
+    ```json
+    {
+      "patient_id": "test-patient-123",
+      "query": "dolor de cabeza migraña"
+    }
+    ```
+
+## 部署
+
+### 1. Deploy Frontend
+```bash
+firebase deploy --only hosting
+```
+
+### 2. Deploy Backend Functions
+```bash
+# Make sure to set your production environment variables
+# firebase functions:config:set openai.key="YOUR_KEY" google.key="YOUR_KEY"
+firebase deploy --only functions
 ```
 
 ## 🧠 Technical Design Decisions
@@ -178,32 +239,6 @@ The system supports multiple LLM providers:
 - **Structured Logs**: JSON format for easy parsing
 - **Request Tracing**: Unique IDs for end-to-end tracking
 - **Error Handling**: Comprehensive error logging and recovery
-
-## 🚀 Deployment
-
-### Development
-```bash
-# Backend
-python main.py
-
-# Frontend
-cd frontend && npm run dev
-```
-
-### Production (Firebase)
-```bash
-# Deploy frontend
-firebase deploy --only hosting
-
-# Deploy Cloud Functions
-firebase deploy --only functions
-```
-
-### Docker
-```bash
-# Build and run
-docker-compose up --build
-```
 
 ## 🔒 Security & Compliance
 
