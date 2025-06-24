@@ -15,6 +15,7 @@ from memory.cognee import CogneeMemoryService
 from mlops.logger import MLflowLogger
 from mlops.drift import DriftDetector
 from utils.id_utils import generate_patient_id
+from langgraph.agent import LangGraphAgent
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -42,6 +43,7 @@ whisper_service = WhisperService()
 memory_service = CogneeMemoryService()
 mlflow_logger = MLflowLogger()
 drift_detector = DriftDetector()
+langgraph_agent = LangGraphAgent()
 
 # Pydantic models
 class AudioRequest(BaseModel):
@@ -50,6 +52,11 @@ class AudioRequest(BaseModel):
     language: str = "es"
 
 class TextRequest(BaseModel):
+    text: str
+    patient_id: Optional[str] = None
+    language: str = "es"
+
+class ProcessRequest(BaseModel):
     text: str
     patient_id: Optional[str] = None
     language: str = "es"
@@ -85,7 +92,8 @@ async def health_check():
             "whisper_service": True,
             "memory_service": True,
             "mlflow_logger": True,
-            "drift_detector": True
+            "drift_detector": True,
+            "langgraph_agent": True
         }
         return {
             "status": "healthy",
@@ -334,6 +342,67 @@ async def process_audio_complete(request: AudioRequest):
     except Exception as e:
         logger.error(f"Complete audio processing failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/process")
+async def process_complete(request: ProcessRequest):
+    """Complete processing pipeline using LangGraph workflow"""
+    try:
+        logger.info(f"Processing complete workflow for text: {request.text[:100]}...")
+        
+        # Generate patient ID if not provided
+        patient_id = request.patient_id or generate_patient_id()
+        
+        # Create initial state for LangGraph workflow
+        initial_state = langgraph_agent.create_initial_state(
+            text=request.text,
+            patient_id=patient_id
+        )
+        
+        # Run the complete LangGraph workflow
+        workflow_result = await langgraph_agent.run(initial_state)
+        
+        # Log to MLflow
+        mlflow_logger.log_custom_metric(
+            metric_name="workflow_completion",
+            value=1.0,
+            step=datetime.now().timestamp(),
+            tags={
+                "patient_id": patient_id,
+                "workflow_version": "1.0",
+                "language": request.language,
+                "symptoms_count": len(workflow_result.get("symptoms", [])),
+                "drift_detected": len(workflow_result.get("drift_flags", [])) > 0
+            }
+        )
+        
+        return {
+            "patient_id": patient_id,
+            "patient_info": workflow_result.get("patient_info", {}),
+            "symptoms": workflow_result.get("symptoms", []),
+            "motive": workflow_result.get("motive", ""),
+            "diagnosis": workflow_result.get("diagnosis", ""),
+            "treatment": workflow_result.get("treatment", ""),
+            "recommendations": workflow_result.get("recommendations", []),
+            "metadata": {
+                "model_version": "gpt-4",
+                "prompt_version": "diagnosis_v3,extract_v2",
+                "latency_ms": 0,  # Will be calculated by Firebase Functions
+                "timestamp": datetime.now().isoformat(),
+                "input_type": "text",
+                "drift_detected": len(workflow_result.get("drift_flags", [])) > 0,
+                "drift_flags": workflow_result.get("drift_flags", []),
+                "workflow_version": "1.0"
+            },
+            "success": True,
+            "language": request.language
+        }
+    except Exception as e:
+        logger.error(f"Complete processing failed: {e}")
+        return {
+            "response": "Lo siento, hubo un error procesando tu mensaje. Por favor, intenta de nuevo.",
+            "success": False,
+            "error": str(e)
+        }
 
 if __name__ == "__main__":
     import uvicorn
